@@ -11,3 +11,30 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Add a bit of custom styling */
+.MuiTableRow-root:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.MuiChip-root {
+  font-weight: 500;
+}
+
+/* Add pulse animation for alerts */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.MuiAlert-standardWarning, 
+.MuiAlert-standardError {
+  animation: pulse 2s infinite;
+}
