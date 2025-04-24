@@ -1,7 +1,8 @@
-// src/layouts/MainLayout.js
-import React, { useState } from 'react';
+// src/layouts/MainLayout.js - Updated with dynamic notifications
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import {
   AppBar,
   Box,
@@ -21,7 +22,12 @@ import {
   MenuItem,
   Button,
   Badge,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -35,7 +41,8 @@ import {
   Help as HelpIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
-  ChevronLeft as ChevronLeftIcon
+  ChevronLeft as ChevronLeftIcon,
+  ArrowUpward as ArrowUpIcon
 } from '@mui/icons-material';
 
 // Drawer width
@@ -45,12 +52,92 @@ const MainLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, logout, isAdmin } = useAuth();
+  const { data } = useData();
   
   // State for mobile drawer
   const [mobileOpen, setMobileOpen] = useState(false);
   
   // State for user menu
   const [userMenuAnchor, setUserMenuAnchor] = useState(null);
+  
+  // State for help dialog
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  
+  // State for notifications dialog
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  
+  // Calculate dynamic notifications
+  const notifications = useMemo(() => {
+    const alerts = [];
+    
+    // Get pending journal entries
+    if (data.JournalEntries) {
+      const pendingJournals = data.JournalEntries.filter(journal => 
+        journal.status === 'Pending' && journal.id !== 'dummy-journal'
+      );
+      if (pendingJournals.length > 0) {
+        alerts.push({
+          type: 'warning',
+          message: `${pendingJournals.length} pending journal ${pendingJournals.length === 1 ? 'entry' : 'entries'} for approval`
+        });
+      }
+    }
+    
+    // Check budget utilization
+    if (data.Programs && data.Expenses) {
+      data.Programs.forEach(program => {
+        if (program.budget && parseFloat(program.budget) > 0) {
+          const programExpenses = data.Expenses.filter(
+            expense => String(expense.program) === String(program.id)
+          );
+          const totalSpent = programExpenses.reduce(
+            (sum, expense) => sum + parseFloat(expense.amount || 0), 
+            0
+          );
+          const utilization = (totalSpent / parseFloat(program.budget)) * 100;
+          
+          if (utilization > 100) {
+            alerts.push({
+              type: 'error',
+              message: `${program.name} has exceeded its budget by ${Math.round(utilization - 100)}%`
+            });
+          } else if (utilization > 90) {
+            alerts.push({
+              type: 'warning',
+              message: `${program.name} budget utilization is at ${Math.round(utilization)}%`
+            });
+          }
+        }
+      });
+    }
+    
+    // Check committed expenses
+    if (data.Expenses) {
+      const committedExpenses = data.Expenses.filter(
+        expense => expense.status === 'Committed'
+      );
+      if (committedExpenses.length > 0) {
+        const totalCommitted = committedExpenses.reduce(
+          (sum, expense) => sum + parseFloat(expense.amount || 0), 
+          0
+        );
+        alerts.push({
+          type: 'info',
+          message: `${committedExpenses.length} committed expenses totaling $${totalCommitted.toLocaleString()}`
+        });
+      }
+    }
+    
+    // If no alerts, add a success message
+    if (alerts.length === 0) {
+      alerts.push({
+        type: 'success',
+        message: 'All clear - no pending issues'
+      });
+    }
+    
+    return alerts;
+  }, [data]);
   
   // Handle drawer toggle
   const handleDrawerToggle = () => {
@@ -73,6 +160,29 @@ const MainLayout = ({ children }) => {
     handleUserMenuClose();
   };
   
+  // Handle profile click
+  const handleProfileClick = () => {
+    // For now, show a simple alert. In production, this would navigate to a profile page
+    alert('Profile management coming soon!');
+    handleUserMenuClose();
+  };
+  
+  // Handle help dialog
+  const handleHelpDialog = () => {
+    setHelpDialogOpen(!helpDialogOpen);
+  };
+  
+  // Handle notifications
+  const handleNotifications = () => {
+    setNotificationsOpen(!notificationsOpen);
+  };
+  
+  // Handle settings click
+  const handleSettingsClick = () => {
+    // For now, show a simple alert. In production, this would navigate to settings page
+    alert('Settings management coming soon!');
+  };
+  
   // Navigation items
   const navItems = [
     { name: 'Dashboard', icon: <DashboardIcon />, path: '/' },
@@ -81,10 +191,10 @@ const MainLayout = ({ children }) => {
     { name: 'Journal Entries', icon: <JournalIcon />, path: '/journal' },
   ];
   
-  // Admin nav items
-  const adminNavItems = [
+  // Admin nav items - only show if user is actually admin
+  const adminNavItems = isAdmin() ? [
     { name: 'User Management', icon: <UserIcon />, path: '/users' },
-  ];
+  ] : [];
   
   // Drawer content
   const drawer = (
@@ -117,7 +227,7 @@ const MainLayout = ({ children }) => {
         ))}
       </List>
       
-      {isAdmin() && (
+      {adminNavItems.length > 0 && (
         <>
           <Divider />
           <List>
@@ -183,8 +293,9 @@ const MainLayout = ({ children }) => {
             <IconButton
               size="large"
               color="inherit"
+              onClick={handleNotifications}
             >
-              <Badge badgeContent={3} color="error">
+              <Badge badgeContent={notifications.length} color="error">
                 <NotificationIcon />
               </Badge>
             </IconButton>
@@ -195,6 +306,7 @@ const MainLayout = ({ children }) => {
             <IconButton
               size="large"
               color="inherit"
+              onClick={handleHelpDialog}
             >
               <HelpIcon />
             </IconButton>
@@ -205,6 +317,7 @@ const MainLayout = ({ children }) => {
             <IconButton
               size="large"
               color="inherit"
+              onClick={handleSettingsClick}
             >
               <SettingsIcon />
             </IconButton>
@@ -243,7 +356,7 @@ const MainLayout = ({ children }) => {
                 horizontal: 'right',
               }}
             >
-              <MenuItem onClick={handleUserMenuClose}>
+              <MenuItem onClick={handleProfileClick}>
                 <ListItemIcon>
                   <AccountIcon fontSize="small" />
                 </ListItemIcon>
@@ -262,6 +375,56 @@ const MainLayout = ({ children }) => {
           </Box>
         </Toolbar>
       </AppBar>
+      
+      {/* Help Dialog */}
+      <Dialog open={helpDialogOpen} onClose={handleHelpDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Help</DialogTitle>
+        <DialogContent>
+          <Typography paragraph>
+            Welcome to KIOSC Finance Management System!
+          </Typography>
+          <Typography paragraph>
+            <strong>Features:</strong>
+          </Typography>
+          <ul>
+            <li>Expense Management - Track and manage all expenses</li>
+            <li>Supplier Management - Manage supplier information</li>
+            <li>Journal Entries - Create and approve fund transfers</li>
+            {isAdmin() && <li>User Management - Manage system users and permissions</li>}
+          </ul>
+          <Typography paragraph>
+            <strong>Quick Tips:</strong>
+          </Typography>
+          <ul>
+            <li>Use the dashboard to get an overview of your financial status</li>
+            <li>All changes are saved to Excel automatically</li>
+            <li>You can export data to PDF or CSV from each page</li>
+          </ul>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleHelpDialog}>Close</Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* Notifications Dialog */}
+      <Dialog open={notificationsOpen} onClose={handleNotifications} maxWidth="sm" fullWidth>
+        <DialogTitle>Notifications</DialogTitle>
+        <DialogContent>
+          {notifications.map((notification, index) => (
+            <Alert 
+              key={index} 
+              severity={notification.type} 
+              sx={{ mb: 2 }}
+              icon={notification.type === 'error' ? <ArrowUpIcon /> : undefined}
+            >
+              {notification.message}
+            </Alert>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleNotifications}>Close</Button>
+        </DialogActions>
+      </Dialog>
       
       {/* Drawer */}
       <Box

@@ -3,9 +3,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
-import { AuthProvider } from './contexts/AuthContext';
-import { useAuth } from './contexts/AuthContext';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -90,75 +89,82 @@ const theme = createTheme({
   },
 });
 
+// App routes component
+const AppRoutes = () => {
+  return (
+    <Router>
+      <Routes>
+        {/* Auth routes */}
+        <Route path="/login" element={
+          <AuthLayout>
+            <Login />
+          </AuthLayout>
+        } />
+        
+        {/* Protected routes */}
+        <Route path="/" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Dashboard />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/expenses" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <ExpenseManagement />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/suppliers" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <SupplierManagement />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/journal" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <JournalEntry />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/users" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <UserManagement />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        
+        {/* Fallback route */}
+        <Route path="*" element={
+          <AuthLayout>
+            <NotFound />
+          </AuthLayout>
+        } />
+      </Routes>
+    </Router>
+  );
+};
+
 // App component
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <DataProvider>
-        <AuthProvider>
-          <Router>
-            <Routes>
-              {/* Auth routes */}
-              <Route path="/login" element={
-                <AuthLayout>
-                  <Login />
-                </AuthLayout>
-              } />
-              
-              {/* Protected routes */}
-              <Route path="/" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <Dashboard />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/expenses" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <ExpenseManagement />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/suppliers" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <SupplierManagement />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/journal" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <JournalEntry />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-              
-              <Route path="/users" element={
-                <ProtectedRoute>
-                  <MainLayout>
-                    <UserManagement />
-                  </MainLayout>
-                </ProtectedRoute>
-              } />
-              
-              {/* Fallback route */}
-              <Route path="*" element={
-                <AuthLayout>
-                  <NotFound />
-                </AuthLayout>
-              } />
-            </Routes>
-          </Router>
-        </AuthProvider>
-      </DataProvider>
+      <AuthProvider>
+        <DataProvider>
+          <AppRoutes />
+        </DataProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 };
 
-export default App; 
+export default App;

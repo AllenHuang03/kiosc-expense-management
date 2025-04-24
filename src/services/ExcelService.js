@@ -205,6 +205,98 @@ class ExcelService {
     return true;
   }
 
+   /**
+   * Add journal entry with lines
+   * @param {Object} journal - The journal entry
+   * @returns {boolean} Success status
+   */
+   addJournalWithLines(journal) {
+    try {
+      // Add the main journal entry
+      const mainJournal = { ...journal };
+      delete mainJournal.lines; // Remove lines from main entry
+      
+      // Add to JournalEntries sheet
+      this.addRow('JournalEntries', mainJournal);
+      
+      // Create JournalLines sheet if it doesn't exist
+      if (!this.data.JournalLines) {
+        this.data.JournalLines = [];
+        this.createSheet('JournalLines');
+      }
+      
+      // Add each line to JournalLines sheet
+      if (journal.lines && journal.lines.length > 0) {
+        journal.lines.forEach((line, index) => {
+          const journalLine = {
+            id: `${journal.id}-L${index + 1}`,
+            journalId: journal.id,
+            lineNumber: index + 1,
+            type: line.type,
+            program: line.program || '',
+            paymentCenter: line.paymentCenter,
+            amount: line.amount,
+            createdAt: new Date().toISOString()
+          };
+          
+          this.addRow('JournalLines', journalLine);
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error adding journal with lines:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Update journal entry with lines
+   * @param {string} id - Journal ID
+   * @param {Object} updates - Updated journal data
+   * @returns {boolean} Success status
+   */
+  updateJournalWithLines(id, updates) {
+    try {
+      // Update the main journal entry
+      const mainUpdates = { ...updates };
+      delete mainUpdates.lines; // Remove lines from main update
+      
+      // Update in JournalEntries sheet
+      this.updateRow('JournalEntries', id, 'id', mainUpdates);
+      
+      // Delete existing lines for this journal
+      if (this.data.JournalLines) {
+        this.data.JournalLines = this.data.JournalLines.filter(
+          line => line.journalId !== id
+        );
+      }
+      
+      // Add updated lines
+      if (updates.lines && updates.lines.length > 0) {
+        updates.lines.forEach((line, index) => {
+          const journalLine = {
+            id: `${id}-L${index + 1}`,
+            journalId: id,
+            lineNumber: index + 1,
+            type: line.type,
+            program: line.program || '',
+            paymentCenter: line.paymentCenter,
+            amount: line.amount,
+            createdAt: new Date().toISOString()
+          };
+          
+          this.addRow('JournalLines', journalLine);
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating journal with lines:', error);
+      return false;
+    }
+  }
+
   /**
    * Delete a row from a sheet
    * @param {string} sheetName - The name of the sheet
@@ -238,6 +330,7 @@ class ExcelService {
     }
     
     this.data[sheetName] = data;
+    
   }
 }
 

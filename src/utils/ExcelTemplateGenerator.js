@@ -1,0 +1,131 @@
+// src/utils/ExcelTemplateGenerator.js - With Journal Lines sheet
+import * as XLSX from 'xlsx';
+
+class ExcelTemplateGenerator {
+  generateTemplate() {
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+    
+    // Add Users sheet
+    const usersData = [
+      ['id', 'username', 'name', 'email', 'role', 'permissions', 'status', 'lastLogin', 'createdAt'],
+      ['1', 'admin', 'Administrator', 'admin@kiosc.com', 'admin', 'read,write,delete,admin,approve', 'active', '', '2023-01-01T00:00:00.000Z'],
+      ['2', 'manager', 'John Manager', 'john@kiosc.com', 'manager', 'read,write,approve', 'active', '', '2023-01-01T00:00:00.000Z'],
+      ['3', 'user', 'Jane User', 'jane@kiosc.com', 'user', 'read,write', 'active', '', '2023-01-01T00:00:00.000Z'],
+      ['4', 'viewer', 'View Only', 'viewer@kiosc.com', 'viewer', 'read', 'active', '', '2023-01-01T00:00:00.000Z']
+    ];
+    const usersWorksheet = XLSX.utils.aoa_to_sheet(usersData);
+    XLSX.utils.book_append_sheet(workbook, usersWorksheet, 'Users');
+    
+    // Add Suppliers sheet
+    const suppliersData = [
+      ['id', 'code', 'name', 'category', 'status', 'contactName', 'email', 'phone', 'address', 'abn', 'paymentTerms', 'notes', 'createdAt'],
+      ['SUP001', 'SUP001', 'Tech Solutions Inc', '1', 'Active', 'John Smith', 'john@techsolutions.com', '(03) 9555-1234', '123 Tech Lane Melbourne VIC 3000', '12 345 678 901', '30', 'Preferred IT hardware supplier', '2023-01-15T00:00:00.000Z'],
+      ['SUP002', 'SUP002', 'Office Supplies Co', '2', 'Active', 'Sarah Johnson', 'sarah@officesupplies.com', '(03) 9555-5678', '456 Supply Street Melbourne VIC 3000', '23 456 789 012', '14', 'Regular office supply vendor', '2023-02-10T00:00:00.000Z'],
+      ['SUP003', 'SUP003', 'Education Resources Ltd', '5', 'Active', 'Michael Chen', 'michael@eduresources.com', '(03) 9555-9012', '789 Learning Road Melbourne VIC 3000', '34 567 890 123', '30', 'Educational materials and resources', '2023-03-05T00:00:00.000Z']
+    ];
+    const suppliersWorksheet = XLSX.utils.aoa_to_sheet(suppliersData);
+    XLSX.utils.book_append_sheet(workbook, suppliersWorksheet, 'Suppliers');
+    
+    // Add Programs sheet
+    const programsData = [
+      ['id', 'name', 'description', 'budget'],
+      ['1', 'General Operations', 'Day-to-day operational expenses', '250000'],
+      ['2', 'Outreach Program', 'Community outreach and education', '75000'],
+      ['3', 'Research Initiative', 'Research and development projects', '120000'],
+      ['4', 'Infrastructure', 'Infrastructure maintenance and upgrades', '180000'],
+      ['5', 'Staff Development', 'Training and professional development', '50000']
+    ];
+    const programsWorksheet = XLSX.utils.aoa_to_sheet(programsData);
+    XLSX.utils.book_append_sheet(workbook, programsWorksheet, 'Programs');
+    
+    // Add PaymentCenters sheet
+    const paymentCentersData = [
+      ['id', 'name', 'description'],
+      ['1', 'GDC', 'GDC Payment Center'],
+      ['2', 'VCES', 'VCES Payment Center'],
+      ['3', 'Commercial', 'Commercial Payment Center'],
+      ['4', 'Operation', 'Operation Payment Center']
+    ];
+    const paymentCentersWorksheet = XLSX.utils.aoa_to_sheet(paymentCentersData);
+    XLSX.utils.book_append_sheet(workbook, paymentCentersWorksheet, 'PaymentCenters');
+    
+    // Add PaymentTypes sheet
+    const paymentTypesData = [
+      ['id', 'name', 'description'],
+      ['1', 'PO', 'Purchase Order'],
+      ['2', 'Credit Card', 'Credit Card Payment'],
+      ['3', 'Activiti', 'Activiti Invoice']
+    ];
+    const paymentTypesWorksheet = XLSX.utils.aoa_to_sheet(paymentTypesData);
+    XLSX.utils.book_append_sheet(workbook, paymentTypesWorksheet, 'PaymentTypes');
+    
+    // Add ExpenseStatus sheet
+    const expenseStatusData = [
+      ['id', 'name', 'description'],
+      ['1', 'Committed', 'Expense is committed but not paid'],
+      ['2', 'Invoiced', 'Invoice received but not paid'],
+      ['3', 'Paid', 'Expense is paid']
+    ];
+    const expenseStatusWorksheet = XLSX.utils.aoa_to_sheet(expenseStatusData);
+    XLSX.utils.book_append_sheet(workbook, expenseStatusWorksheet, 'ExpenseStatus');
+    
+    // Add Expenses sheet
+    const expensesData = [
+      ['id', 'date', 'description', 'supplier', 'amount', 'paymentType', 'paymentCenter', 'program', 'status', 'notes', 'invoiceDate', 'paymentDate', 'createdBy', 'createdAt'],
+      ['EXP001', '2023-01-20', 'Computer Equipment Purchase', 'SUP001', '5699.99', '1', '1', '1', 'Paid', 'New laptops for staff', '2023-01-20', '2023-01-20', 'admin', '2023-01-20T09:30:00.000Z'],
+      ['EXP002', '2023-02-05', 'Office Supplies', 'SUP002', '824.50', '2', '1', '1', 'Paid', 'Monthly office supplies', '2023-02-05', '2023-02-05', 'admin', '2023-02-05T10:15:00.000Z'],
+      ['EXP003', '2023-02-15', 'Educational Materials', 'SUP003', '3450.00', '1', '2', '2', 'Invoiced', 'Materials for outreach program', '2023-02-15', '', 'user', '2023-02-15T14:00:00.000Z']
+    ];
+    const expensesWorksheet = XLSX.utils.aoa_to_sheet(expensesData);
+    XLSX.utils.book_append_sheet(workbook, expensesWorksheet, 'Expenses');
+    
+    // Add JournalEntries sheet (main journal headers)
+    const journalEntriesData = [
+      ['id', 'date', 'description', 'reference', 'status', 'notes', 'createdBy', 'createdAt', 'approvedBy', 'approvedAt', 'rejectedBy', 'rejectedAt', 'reason', 'totalAmount'],
+      ['JE001', '2023-03-15', 'Budget Reallocation - Q1 Adjustment', 'JE-20230315-001', 'Approved', 'Quarterly budget reallocation to support outreach initiatives', 'admin', '2023-03-15T10:30:00.000Z', 'admin', '2023-03-16T09:15:00.000Z', '', '', '', '5000'],
+      ['JE002', '2023-04-05', 'Multi-line Transfer Example', 'JE-20230405-001', 'Approved', 'Transfer from one payment center to multiple programs', 'user', '2023-04-05T14:45:00.000Z', 'admin', '2023-04-06T11:20:00.000Z', '', '', '', '10000']
+    ];
+    const journalEntriesWorksheet = XLSX.utils.aoa_to_sheet(journalEntriesData);
+    XLSX.utils.book_append_sheet(workbook, journalEntriesWorksheet, 'JournalEntries');
+    
+    // Add JournalLines sheet (detailed lines for each journal)
+    const journalLinesData = [
+      ['id', 'journalId', 'lineNumber', 'type', 'program', 'paymentCenter', 'amount', 'createdAt'],
+      ['JE001-L1', 'JE001', '1', 'credit', '1', '1', '5000', '2023-03-15T10:30:00.000Z'],
+      ['JE001-L2', 'JE001', '2', 'debit', '2', '1', '5000', '2023-03-15T10:30:00.000Z'],
+      ['JE002-L1', 'JE002', '1', 'credit', '4', '3', '10000', '2023-04-05T14:45:00.000Z'],
+      ['JE002-L2', 'JE002', '2', 'debit', '2', '2', '3000', '2023-04-05T14:45:00.000Z'],
+      ['JE002-L3', 'JE002', '3', 'debit', '3', '2', '4000', '2023-04-05T14:45:00.000Z'],
+      ['JE002-L4', 'JE002', '4', 'debit', '5', '2', '3000', '2023-04-05T14:45:00.000Z']
+    ];
+    const journalLinesWorksheet = XLSX.utils.aoa_to_sheet(journalLinesData);
+    XLSX.utils.book_append_sheet(workbook, journalLinesWorksheet, 'JournalLines');
+    
+    // Add AuditLog sheet for full audit trail
+    const auditLogData = [
+      ['id', 'entityType', 'entityId', 'action', 'userId', 'username', 'timestamp', 'changes', 'description'],
+      ['AUDIT001', 'JournalEntries', 'JE001', 'CREATE', '1', 'admin', '2023-03-15T10:30:00.000Z', 'Created new journal entry', 'Created journal entry JE-20230315-001'],
+      ['AUDIT002', 'JournalEntries', 'JE001', 'APPROVE', '1', 'admin', '2023-03-16T09:15:00.000Z', 'Status changed from Pending to Approved', 'Approved journal entry JE-20230315-001'],
+      ['AUDIT003', 'JournalEntries', 'JE002', 'CREATE', '3', 'user', '2023-04-05T14:45:00.000Z', 'Created new journal entry', 'Created journal entry JE-20230405-001'],
+      ['AUDIT004', 'JournalEntries', 'JE002', 'APPROVE', '1', 'admin', '2023-04-06T11:20:00.000Z', 'Status changed from Pending to Approved', 'Approved journal entry JE-20230405-001']
+    ];
+    const auditLogWorksheet = XLSX.utils.aoa_to_sheet(auditLogData);
+    XLSX.utils.book_append_sheet(workbook, auditLogWorksheet, 'AuditLog');
+    
+    // Generate and download the Excel file
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'KIOSC_Finance_Data_Template.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+}
+
+export default new ExcelTemplateGenerator();
