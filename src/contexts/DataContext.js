@@ -1,4 +1,4 @@
-// src/contexts/DataContext.js - Fixed version without circular dependency
+// src/contexts/DataContext.js - Simplified error handling
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import excelService from '../services/ExcelService';
@@ -16,7 +16,7 @@ export const DataProvider = ({ children }) => {
   // State for all data
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); 
   const [initialized, setInitialized] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   
@@ -107,8 +107,14 @@ export const DataProvider = ({ children }) => {
         });
       }
       
+      // Ensure PaymentCenterBudgets collection exists
+      if (!newData.PaymentCenterBudgets) {
+        newData.PaymentCenterBudgets = [];
+        excelService.updateSheetData('PaymentCenterBudgets', []);
+      }
+      
       // Ensure all other collections exist and remove duplicates
-      ['Expenses', 'Suppliers', 'Programs', 'PaymentCenters', 'PaymentTypes', 'ExpenseStatus'].forEach(collection => {
+      ['Expenses', 'Suppliers', 'Programs', 'PaymentCenters', 'PaymentTypes', 'PaymentCenterBudgets', 'ExpenseStatus'].forEach(collection => {
         if (newData[collection]) {
           const uniqueEntries = Array.from(
             new Map(newData[collection].map(item => [item.id, item])).values()
@@ -636,6 +642,11 @@ export const DataProvider = ({ children }) => {
     return data[collection].filter(item => String(item[field]) === String(value));
   }, [data]);
   
+  // Clear error
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+  
   // Context value
   const contextValue = {
     data,
@@ -653,7 +664,8 @@ export const DataProvider = ({ children }) => {
     deleteEntity,
     getEntities,
     getEntityById,
-    filterEntities
+    filterEntities,
+    clearError
   };
   
   return (

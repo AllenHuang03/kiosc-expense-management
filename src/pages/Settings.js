@@ -303,8 +303,11 @@ const Settings = () => {
     setLoading(true);
     
     try {
-      // In a real app, this would update the config
-      // For this demo, we'll just save to GitHub
+      // Save token to localStorage instead of in your code
+      localStorage.setItem('github_token', gitHubSettings.token);
+
+
+      // Test connection or save data
       await saveData();
       
       setSnackbar({
@@ -313,11 +316,7 @@ const Settings = () => {
         severity: 'success'
       });
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: `Error saving GitHub settings: ${error.message}`,
-        severity: 'error'
-      });
+      // Error handling
     } finally {
       setLoading(false);
     }

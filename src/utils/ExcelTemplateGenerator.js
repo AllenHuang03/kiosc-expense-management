@@ -1,4 +1,4 @@
-// src/utils/ExcelTemplateGenerator.js - With Journal Lines sheet
+// src/utils/ExcelTemplateGenerator.js - With Payment Center Budgets instead of Programs
 import * as XLSX from 'xlsx';
 
 class ExcelTemplateGenerator {
@@ -27,18 +27,6 @@ class ExcelTemplateGenerator {
     const suppliersWorksheet = XLSX.utils.aoa_to_sheet(suppliersData);
     XLSX.utils.book_append_sheet(workbook, suppliersWorksheet, 'Suppliers');
     
-    // Add Programs sheet
-    const programsData = [
-      ['id', 'name', 'description', 'budget'],
-      ['1', 'General Operations', 'Day-to-day operational expenses', '250000'],
-      ['2', 'Outreach Program', 'Community outreach and education', '75000'],
-      ['3', 'Research Initiative', 'Research and development projects', '120000'],
-      ['4', 'Infrastructure', 'Infrastructure maintenance and upgrades', '180000'],
-      ['5', 'Staff Development', 'Training and professional development', '50000']
-    ];
-    const programsWorksheet = XLSX.utils.aoa_to_sheet(programsData);
-    XLSX.utils.book_append_sheet(workbook, programsWorksheet, 'Programs');
-    
     // Add PaymentCenters sheet
     const paymentCentersData = [
       ['id', 'name', 'description'],
@@ -49,6 +37,18 @@ class ExcelTemplateGenerator {
     ];
     const paymentCentersWorksheet = XLSX.utils.aoa_to_sheet(paymentCentersData);
     XLSX.utils.book_append_sheet(workbook, paymentCentersWorksheet, 'PaymentCenters');
+    
+    // Add PaymentCenterBudgets sheet (replacing Programs sheet)
+    const currentYear = new Date().getFullYear();
+    const paymentCenterBudgetsData = [
+      ['id', 'paymentCenterId', 'year', 'budget', 'description', 'notes', 'createdAt'],
+      ['PCB001', '1', currentYear.toString(), '500000', 'GDC annual budget', 'Includes all operational expenses for GDC', '2023-01-01T00:00:00.000Z'],
+      ['PCB002', '2', currentYear.toString(), '300000', 'VCES annual budget', 'Includes all operational expenses for VCES', '2023-01-01T00:00:00.000Z'],
+      ['PCB003', '3', currentYear.toString(), '750000', 'Commercial activities budget', 'Includes all commercial operations', '2023-01-01T00:00:00.000Z'],
+      ['PCB004', '4', currentYear.toString(), '450000', 'Operations budget', 'General operational expenses', '2023-01-01T00:00:00.000Z']
+    ];
+    const paymentCenterBudgetsWorksheet = XLSX.utils.aoa_to_sheet(paymentCenterBudgetsData);
+    XLSX.utils.book_append_sheet(workbook, paymentCenterBudgetsWorksheet, 'PaymentCenterBudgets');
     
     // Add PaymentTypes sheet
     const paymentTypesData = [
@@ -70,45 +70,34 @@ class ExcelTemplateGenerator {
     const expenseStatusWorksheet = XLSX.utils.aoa_to_sheet(expenseStatusData);
     XLSX.utils.book_append_sheet(workbook, expenseStatusWorksheet, 'ExpenseStatus');
     
-    // Add Expenses sheet
+    // Add Expenses sheet (without program field)
     const expensesData = [
-      ['id', 'date', 'description', 'supplier', 'amount', 'paymentType', 'paymentCenter', 'program', 'status', 'notes', 'invoiceDate', 'paymentDate', 'createdBy', 'createdAt'],
-      ['EXP001', '2023-01-20', 'Computer Equipment Purchase', 'SUP001', '5699.99', '1', '1', '1', 'Paid', 'New laptops for staff', '2023-01-20', '2023-01-20', 'admin', '2023-01-20T09:30:00.000Z'],
-      ['EXP002', '2023-02-05', 'Office Supplies', 'SUP002', '824.50', '2', '1', '1', 'Paid', 'Monthly office supplies', '2023-02-05', '2023-02-05', 'admin', '2023-02-05T10:15:00.000Z'],
-      ['EXP003', '2023-02-15', 'Educational Materials', 'SUP003', '3450.00', '1', '2', '2', 'Invoiced', 'Materials for outreach program', '2023-02-15', '', 'user', '2023-02-15T14:00:00.000Z']
+      ['id', 'date', 'description', 'supplier', 'amount', 'paymentType', 'paymentCenter', 'status', 'notes', 'invoiceDate', 'paymentDate', 'createdBy', 'createdAt'],
+      ['EXP001', '2023-01-20', 'Computer Equipment Purchase', 'SUP001', '5699.99', '1', '1', 'Paid', 'New laptops for staff', '2023-01-20', '2023-01-20', 'admin', '2023-01-20T09:30:00.000Z'],
+      ['EXP002', '2023-02-05', 'Office Supplies', 'SUP002', '824.50', '2', '1', 'Paid', 'Monthly office supplies', '2023-02-05', '2023-02-05', 'admin', '2023-02-05T10:15:00.000Z'],
+      ['EXP003', '2023-02-15', 'Educational Materials', 'SUP003', '3450.00', '1', '2', 'Invoiced', 'Materials for outreach program', '2023-02-15', '', 'user', '2023-02-15T14:00:00.000Z'],
+      ['EXP004', '2023-03-01', 'Commercial Project Expenses', 'SUP001', '15000.00', '1', '3', 'Paid', 'Large commercial project equipment', '2023-03-05', '2023-03-15', 'admin', '2023-03-01T11:00:00.000Z']
     ];
     const expensesWorksheet = XLSX.utils.aoa_to_sheet(expensesData);
     XLSX.utils.book_append_sheet(workbook, expensesWorksheet, 'Expenses');
     
-    // Add JournalEntries sheet (main journal headers)
+    // Add JournalEntries sheet (between payment centers only)
     const journalEntriesData = [
-      ['id', 'date', 'description', 'reference', 'status', 'notes', 'createdBy', 'createdAt', 'approvedBy', 'approvedAt', 'rejectedBy', 'rejectedAt', 'reason', 'totalAmount'],
-      ['JE001', '2023-03-15', 'Budget Reallocation - Q1 Adjustment', 'JE-20230315-001', 'Approved', 'Quarterly budget reallocation to support outreach initiatives', 'admin', '2023-03-15T10:30:00.000Z', 'admin', '2023-03-16T09:15:00.000Z', '', '', '', '5000'],
-      ['JE002', '2023-04-05', 'Multi-line Transfer Example', 'JE-20230405-001', 'Approved', 'Transfer from one payment center to multiple programs', 'user', '2023-04-05T14:45:00.000Z', 'admin', '2023-04-06T11:20:00.000Z', '', '', '', '10000']
+      ['id', 'date', 'description', 'reference', 'fromPaymentCenter', 'toPaymentCenter', 'amount', 'status', 'notes', 'createdBy', 'createdAt', 'approvedBy', 'approvedAt', 'rejectedBy', 'rejectedAt', 'reason'],
+      ['JE001', '2023-03-15', 'Budget Reallocation - Q1 Adjustment', 'JE-20230315-001', '1', '2', '5000', 'Approved', 'Quarterly budget reallocation to support VCES initiatives', 'admin', '2023-03-15T10:30:00.000Z', 'admin', '2023-03-16T09:15:00.000Z', '', '', ''],
+      ['JE002', '2023-04-05', 'Fund Transfer - Equipment Purchase', 'JE-20230405-001', '3', '4', '7500', 'Approved', 'Transfer from Commercial to Operations for equipment purchase', 'user', '2023-04-05T14:45:00.000Z', 'admin', '2023-04-06T11:20:00.000Z', '', '', '']
     ];
     const journalEntriesWorksheet = XLSX.utils.aoa_to_sheet(journalEntriesData);
     XLSX.utils.book_append_sheet(workbook, journalEntriesWorksheet, 'JournalEntries');
     
-    // Add JournalLines sheet (detailed lines for each journal)
-    const journalLinesData = [
-      ['id', 'journalId', 'lineNumber', 'type', 'program', 'paymentCenter', 'amount', 'createdAt'],
-      ['JE001-L1', 'JE001', '1', 'credit', '1', '1', '5000', '2023-03-15T10:30:00.000Z'],
-      ['JE001-L2', 'JE001', '2', 'debit', '2', '1', '5000', '2023-03-15T10:30:00.000Z'],
-      ['JE002-L1', 'JE002', '1', 'credit', '4', '3', '10000', '2023-04-05T14:45:00.000Z'],
-      ['JE002-L2', 'JE002', '2', 'debit', '2', '2', '3000', '2023-04-05T14:45:00.000Z'],
-      ['JE002-L3', 'JE002', '3', 'debit', '3', '2', '4000', '2023-04-05T14:45:00.000Z'],
-      ['JE002-L4', 'JE002', '4', 'debit', '5', '2', '3000', '2023-04-05T14:45:00.000Z']
-    ];
-    const journalLinesWorksheet = XLSX.utils.aoa_to_sheet(journalLinesData);
-    XLSX.utils.book_append_sheet(workbook, journalLinesWorksheet, 'JournalLines');
-    
     // Add AuditLog sheet for full audit trail
     const auditLogData = [
       ['id', 'entityType', 'entityId', 'action', 'userId', 'username', 'timestamp', 'changes', 'description'],
-      ['AUDIT001', 'JournalEntries', 'JE001', 'CREATE', '1', 'admin', '2023-03-15T10:30:00.000Z', 'Created new journal entry', 'Created journal entry JE-20230315-001'],
-      ['AUDIT002', 'JournalEntries', 'JE001', 'APPROVE', '1', 'admin', '2023-03-16T09:15:00.000Z', 'Status changed from Pending to Approved', 'Approved journal entry JE-20230315-001'],
-      ['AUDIT003', 'JournalEntries', 'JE002', 'CREATE', '3', 'user', '2023-04-05T14:45:00.000Z', 'Created new journal entry', 'Created journal entry JE-20230405-001'],
-      ['AUDIT004', 'JournalEntries', 'JE002', 'APPROVE', '1', 'admin', '2023-04-06T11:20:00.000Z', 'Status changed from Pending to Approved', 'Approved journal entry JE-20230405-001']
+      ['AUDIT001', 'Expenses', 'EXP001', 'CREATE', '1', 'admin', '2023-01-20T09:30:00.000Z', 'Created new expense', 'Created expense for computer equipment'],
+      ['AUDIT002', 'JournalEntries', 'JE001', 'CREATE', '1', 'admin', '2023-03-15T10:30:00.000Z', 'Created new journal entry', 'Created journal entry JE-20230315-001'],
+      ['AUDIT003', 'JournalEntries', 'JE001', 'APPROVE', '1', 'admin', '2023-03-16T09:15:00.000Z', 'Status changed from Pending to Approved', 'Approved journal entry JE-20230315-001'],
+      ['AUDIT004', 'JournalEntries', 'JE002', 'CREATE', '3', 'user', '2023-04-05T14:45:00.000Z', 'Created new journal entry', 'Created journal entry JE-20230405-001'],
+      ['AUDIT005', 'JournalEntries', 'JE002', 'APPROVE', '1', 'admin', '2023-04-06T11:20:00.000Z', 'Status changed from Pending to Approved', 'Approved journal entry JE-20230405-001']
     ];
     const auditLogWorksheet = XLSX.utils.aoa_to_sheet(auditLogData);
     XLSX.utils.book_append_sheet(workbook, auditLogWorksheet, 'AuditLog');

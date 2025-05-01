@@ -1,5 +1,5 @@
 // src/pages/ExpenseManagement.js
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, 
@@ -100,14 +100,14 @@ const ExpenseManagement = () => {
   const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const showNewExpense = queryParams.get('action') === 'new';
   
-  // State
+  // State - define all state variables at the beginning
+  const [submitting, setSubmitting] = useState(false);
   const [expenses, setExpenses] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [programs, setPrograms] = useState([]);
   const [paymentCenters, setPaymentCenters] = useState([]);
   const [paymentTypes, setPaymentTypes] = useState([]);
   const [expenseStatuses, setExpenseStatuses] = useState([]);
-  
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(showNewExpense);
   const [dialogMode, setDialogMode] = useState(showNewExpense ? 'add' : null); // 'add', 'edit', 'view'
@@ -143,11 +143,24 @@ const ExpenseManagement = () => {
     paymentDate: ''
   });
   
+  // Check if expense is a duplicate
+  const isDuplicateExpense = useCallback((newExpense) => {
+    // Consider an expense duplicate if it has the same description, supplier, date, and amount
+    return expenses.some(expense => 
+      expense.description?.toLowerCase() === newExpense.description?.toLowerCase() &&
+      expense.supplier === newExpense.supplier &&
+      expense.date === newExpense.date && 
+      parseFloat(expense.amount) === parseFloat(newExpense.amount) &&
+      expense.id !== newExpense.id
+    );
+  }, [expenses]);
+
   // Load data from context
   useEffect(() => {
     if (data) {
-      // Set expenses
+      // Set expenses - don't filter any out
       if (data.Expenses) {
+        console.log(`Setting ${data.Expenses.length} expenses`);
         setExpenses(data.Expenses);
       }
       
@@ -189,7 +202,7 @@ const ExpenseManagement = () => {
         amount: '',
         paymentType: filterPaymentType !== 'All' ? filterPaymentType : '',
         paymentCenter: filterPaymentCenter !== 'All' ? filterPaymentCenter : '',
-        program: filterProgram !== 'All' ? filterProgram : '',
+        program: filterProgram !== 'All' ? filterProgram : '', // Allow empty program
         status: 'Committed',
         notes: '',
         invoiceDate: '',
@@ -281,9 +294,21 @@ const ExpenseManagement = () => {
   
   // Handle expense save (add/edit)
   const handleSaveExpense = () => {
-    // Validate required fields
-    if (!expenseForm.description || !expenseForm.amount || !expenseForm.supplier || 
-        !expenseForm.paymentType || !expenseForm.paymentCenter || !expenseForm.program) {
+    // Prevent duplicate submissions
+    if (submitting) {
+      console.log('Submission already in progress, preventing duplicate');
+      return;
+    }
+    
+    // Validate required fields - make program optional
+    if (
+      !expenseForm.description || 
+      !expenseForm.amount || 
+      !expenseForm.supplier || 
+      !expenseForm.paymentType || 
+      !expenseForm.paymentCenter
+      // Program is not required
+    ) {
       setSnackbar({
         open: true,
         message: 'Please fill in all required fields',
@@ -293,6 +318,9 @@ const ExpenseManagement = () => {
     }
     
     try {
+      // Start submission - set loading state
+      setSubmitting(true);
+      
       // Format data
       const formattedExpense = {
         ...expenseForm,
@@ -311,6 +339,9 @@ const ExpenseManagement = () => {
             message: 'Expense added successfully',
             severity: 'success'
           });
+          
+          // Close dialog
+          setDialogOpen(false);
         } else {
           setSnackbar({
             open: true,
@@ -327,6 +358,9 @@ const ExpenseManagement = () => {
             message: 'Expense updated successfully',
             severity: 'success'
           });
+          
+          // Close dialog
+          setDialogOpen(false);
         } else {
           setSnackbar({
             open: true,
@@ -335,8 +369,6 @@ const ExpenseManagement = () => {
           });
         }
       }
-      
-      setDialogOpen(false);
     } catch (err) {
       console.error('Error saving expense:', err);
       setSnackbar({
@@ -344,6 +376,9 @@ const ExpenseManagement = () => {
         message: `Error: ${err.message}`,
         severity: 'error'
       });
+    } finally {
+      // End submission - reset loading state
+      setSubmitting(false);
     }
   };
   
@@ -498,9 +533,9 @@ const ExpenseManagement = () => {
       const centerMatch = filterPaymentCenter === 'All' || 
         expense.paymentCenter === filterPaymentCenter;
       
-      // Program filter
+      // Program filter - handle empty program values correctly
       const programMatch = filterProgram === 'All' || 
-        expense.program === filterProgram;
+        (expense.program && expense.program === filterProgram);
       
       // Payment type filter
       const typeMatch = filterPaymentType === 'All' || 
@@ -539,6 +574,7 @@ const ExpenseManagement = () => {
   
   // Get program name by ID
   const getProgramName = (id) => {
+    if (!id) return 'Not Assigned';
     const program = programs.find(p => p.id === id);
     return program ? program.name : 'Unknown';
   };
@@ -1109,7 +1145,8 @@ const ExpenseManagement = () => {
               onClick={handleSaveExpense} 
               variant="contained" 
               color="primary"
-              startIcon={<SaveIcon />}
+              disabled={submitting}
+              startIcon={submitting ? <CircularProgress size={24} /> : <SaveIcon />}
             >
               {dialogMode === 'add' ? 'Add Expense' : 'Save Changes'}
             </Button>

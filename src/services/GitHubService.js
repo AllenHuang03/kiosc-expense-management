@@ -1,27 +1,11 @@
 // src/services/GitHubService.js
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import githubConfig from '../config/github-config';
 import excelService from './ExcelService';
 
 class GitHubService {
-  /**
-   * Get the GitHub token from config
-   * @returns {string} GitHub personal access token
-   */
-  getToken() {
-    return githubConfig.personalAccessToken;
-  }
-
-  /**
-   * Get standard request headers with auth token
-   * @returns {Object} Headers object with Authorization
-   */
-  getHeaders() {
-    const token = this.getToken();
-    return token ? { Authorization: `token ${token}` } : {};
-  }
-
   /**
    * Test connection to GitHub repository
    * @returns {Promise<boolean>} Connection status
@@ -31,7 +15,7 @@ class GitHubService {
       const { owner, repository } = githubConfig;
       const url = `https://api.github.com/repos/${owner}/${repository}`;
       
-      await axios.get(url, { headers: this.getHeaders() });
+      await axios.get(url);
       return true;
     } catch (error) {
       console.error('Error testing GitHub connection:', error);
@@ -48,7 +32,7 @@ class GitHubService {
       const { owner, repository, dataPath } = githubConfig;
       const url = `https://api.github.com/repos/${owner}/${repository}/contents/${dataPath}`;
       
-      const response = await axios.get(url, { headers: this.getHeaders() });
+      const response = await axios.get(url);
       
       // Filter for Excel files only
       const excelFiles = response.data.filter(file => 
@@ -79,6 +63,35 @@ class GitHubService {
    */
   async loadDataFromExcel(filename) {
     try {
+
+      // Determine if we're running on GitHub Pages
+      const isGitHubPages = window.location.hostname.includes('github.io');
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      // If on GitHub Pages or mobile, attempt to load from a specific path
+      if (isGitHubPages || isMobile) {
+        try {
+          console.log("Running on GitHub Pages or mobile, attempting to load from direct URL");
+          
+          // First try to load from the same origin
+          const response = await fetch(`${window.location.origin}${window.location.pathname}data/${filename}`);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to load from direct URL: ${response.status}`);
+          }
+          
+          const buffer = await response.arrayBuffer();
+          return excelService.loadExcel(buffer, filename);
+        } catch (directError) {
+          console.warn("Failed to load from direct URL:", directError);
+          
+          // If direct loading fails, use dataInitializer
+          console.log("Using default data structure from DataInitializer");
+          const dataInitializer = (await import('../utils/DataInitializer')).default;
+          return dataInitializer.initializeData();
+        }
+      }
+
       const { owner, repository, dataPath } = githubConfig;
       
       // First get a list of files to find the exact case-sensitive filename
@@ -112,11 +125,10 @@ class GitHubService {
         // Fall back to API method
         const url = `https://api.github.com/repos/${owner}/${repository}/contents/${dataPath}/${exactFilename}`;
         
-        const response = await axios.get(url, { headers: this.getHeaders() });
+        const response = await axios.get(url);
         const downloadUrl = response.data.download_url;
         
         const apiResponse = await axios.get(downloadUrl, {
-          headers: this.getHeaders(),
           responseType: 'arraybuffer'
         });
         
@@ -130,67 +142,45 @@ class GitHubService {
   }
 
   /**
-   * Convert ArrayBuffer to Base64 string
-   * @param {ArrayBuffer} buffer - The buffer to convert
-   * @returns {string} Base64 encoded string
-   */
-  arrayBufferToBase64(buffer) {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    
-    return btoa(binary);
-  }
-
-  /**
-   * Save data to GitHub as an Excel file
+   * Save data locally as an Excel file for manual GitHub upload
    * @param {string} filename - The filename to save
-   * @returns {Promise<Object>} The result of the save operation
+   * @returns {Promise<Object>} Information about the download
    */
   async saveToGitHub(filename = 'KIOSC_Finance_Data.xlsx') {
     try {
-      const { owner, repository, dataPath } = githubConfig;
-      const path = `${dataPath}/${filename}`;
-      
-      // Get Excel data as array buffer
+      // Generate Excel buffer
       const excelBuffer = excelService.saveToExcel();
       
-      // Convert to base64 for GitHub API
-      const base64Content = this.arrayBufferToBase64(excelBuffer);
+      // Create a blob for download
+      const blob = new Blob([excelBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
       
-      // Check if file already exists to get SHA
-      let sha = null;
-      try {
-        const fileInfoUrl = `https://api.github.com/repos/${owner}/${repository}/contents/${path}`;
-        const fileInfoResponse = await axios.get(fileInfoUrl, { headers: this.getHeaders() });
-        sha = fileInfoResponse.data.sha;
-      } catch (error) {
-        // File doesn't exist yet, which is fine
+      // Use saveAs from FileSaver.js if available (requires importing FileSaver)
+      if (typeof saveAs === 'function') {
+        saveAs(blob, filename);
+        return {
+          success: true,
+          message: 'Data exported for manual update. Please commit this file to GitHub manually.'
+        };
       }
       
-      // Create or update file
-      const url = `https://api.github.com/repos/${owner}/${repository}/contents/${path}`;
-      const payload = {
-        message: `Update data file: ${filename}`,
-        content: base64Content,
-        branch: githubConfig.branch
+      // Fallback to creating a download link with user interaction
+      const url = window.URL.createObjectURL(blob);
+      
+      // Instead of programmatically clicking, return the URL for UI-initiated download
+      return {
+        success: true,
+        url: url,
+        filename: filename,
+        message: 'Click the download button to save the file, then commit to GitHub manually.'
       };
-      
-      if (sha) {
-        payload.sha = sha; // Required for updates
-      }
-      
-      const response = await axios.put(url, payload, { headers: this.getHeaders() });
-      return response.data;
     } catch (error) {
-      console.error('Error saving data to GitHub:', error);
+      console.error('Error exporting data:', error);
       throw error;
     }
   }
+  
 }
 
 // Create and export a singleton instance

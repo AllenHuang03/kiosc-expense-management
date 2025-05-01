@@ -13,7 +13,7 @@ const githubConfig = {
     // This token should be set in the app's environment or config
     // For development, you can set it directly here (but don't commit real tokens!)
     // For production, use environment variables
-    personalAccessToken: process.env.REACT_APP_GITHUB_TOKEN || '',
+    
   };
   
   export default githubConfig;

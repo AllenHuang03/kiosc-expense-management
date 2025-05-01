@@ -154,14 +154,24 @@ const SupplierManagement = () => {
   // Load data from context
   useEffect(() => {
     if (data) {
-      // Set suppliers
+      // Set suppliers with deduplication
       if (data.Suppliers) {
-        setSuppliers(data.Suppliers);
+        // Use a Map to ensure unique entries by ID
+        const uniqueSuppliers = Array.from(
+          new Map(data.Suppliers.map(supplier => [supplier.id, supplier])).values()
+        );
+        
+        console.log("Suppliers loaded (unique):", uniqueSuppliers.length);
+        setSuppliers(uniqueSuppliers);
       }
       
       // Set expenses for transaction history
       if (data.Expenses) {
-        setExpenses(data.Expenses);
+        // Deduplicate expenses as well
+        const uniqueExpenses = Array.from(
+          new Map(data.Expenses.map(expense => [expense.id, expense])).values()
+        );
+        setExpenses(uniqueExpenses);
       }
     }
   }, [data]);
@@ -190,7 +200,17 @@ const SupplierManagement = () => {
   // Generate a unique supplier code
   const generateSupplierCode = () => {
     const prefix = 'SUP';
-    const nextNumber = suppliers.length + 1;
+    // Find the highest code number and increment by 1
+    let maxCodeNumber = 0;
+    suppliers.forEach(supplier => {
+      if (supplier.code && supplier.code.startsWith(prefix)) {
+        const codeNumber = parseInt(supplier.code.substring(prefix.length), 10);
+        if (!isNaN(codeNumber) && codeNumber > maxCodeNumber) {
+          maxCodeNumber = codeNumber;
+        }
+      }
+    });
+    const nextNumber = maxCodeNumber + 1;
     return `${prefix}${String(nextNumber).padStart(4, '0')}`;
   };
   
@@ -253,6 +273,16 @@ const SupplierManagement = () => {
     }
   };
   
+  // Check if supplier is a duplicate
+  const isDuplicateSupplier = (newSupplier) => {
+    // Consider a supplier duplicate if it has the same name and category
+    return suppliers.some(supplier => 
+      supplier.name?.toLowerCase() === newSupplier.name?.toLowerCase() &&
+      supplier.category === newSupplier.category &&
+      supplier.id !== newSupplier.id
+    );
+  };
+  
   // Handle supplier save (add/edit)
   const handleSaveSupplier = () => {
     // Validate the form data
@@ -260,6 +290,12 @@ const SupplierManagement = () => {
     
     if (!validation.isValid) {
       setValidationErrors(validation.errors);
+      return;
+    }
+    
+    // Check for duplicates
+    if (dialogMode === 'add' && isDuplicateSupplier(supplierForm)) {
+      setValidationErrors(['A supplier with this name and category already exists.']);
       return;
     }
     
@@ -276,6 +312,7 @@ const SupplierManagement = () => {
         const result = addEntity('Suppliers', formattedSupplier);
         
         if (result) {
+          // Don't update state directly - the data context useEffect will handle this
           setSnackbar({
             open: true,
             message: 'Supplier added successfully',
@@ -292,6 +329,7 @@ const SupplierManagement = () => {
         const success = updateEntity('Suppliers', selectedSupplier.id, formattedSupplier);
         
         if (success) {
+          // Don't update state directly - the data context useEffect will handle this
           setSnackbar({
             open: true,
             message: 'Supplier updated successfully',
@@ -577,12 +615,13 @@ const SupplierManagement = () => {
   // Calculate total transactions for a supplier
   const getSupplierTotalTransactions = (supplierId) => {
     const transactions = getSupplierTransactions(supplierId);
-    return transactions.reduce((total, expense) => total + (expense.amount || 0), 0);
+    return transactions.reduce((total, expense) => total + (parseFloat(expense.amount) || 0), 0);
   };
   
   // Get category name by ID
   const getCategoryName = (id) => {
-    const category = categories.find(c => c.id === parseInt(id));
+    if (!id) return 'Unknown';
+    const category = categories.find(c => c.id === parseInt(id) || c.id === id);
     return category ? category.name : 'Unknown';
   };
   
@@ -590,17 +629,17 @@ const SupplierManagement = () => {
   const filteredSuppliers = useMemo(() => {
     return suppliers.filter(supplier => {
       // Search filter
-      const searchMatch = searchTerm === '' || 
-        supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        supplier.abn?.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchMatch = !searchTerm ||
+        (supplier.name && supplier.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (supplier.code && supplier.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (supplier.contactName && supplier.contactName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (supplier.email && supplier.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (supplier.phone && supplier.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (supplier.abn && supplier.abn.toLowerCase().includes(searchTerm.toLowerCase()));
       
       // Category filter
       const categoryMatch = filterCategory === 'All' || 
-        supplier.category === filterCategory;
+        supplier.category == filterCategory; // Using loose equality to match string and number
       
       // Status filter
       const statusMatch = filterStatus === 'All' || 
@@ -627,7 +666,7 @@ const SupplierManagement = () => {
   
   // Format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(amount);
+    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(amount || 0);
   };
   
   // Loading state
@@ -784,7 +823,7 @@ const SupplierManagement = () => {
           <Tab 
             label={
               <Chip 
-                label={`All Suppliers (${filteredSuppliers.length})`} 
+                label={`All Suppliers (${suppliers.length})`} 
                 color="primary"
               />
             } 

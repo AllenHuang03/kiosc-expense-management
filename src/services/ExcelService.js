@@ -9,6 +9,36 @@ class ExcelService {
   }
 
   /**
+ * Initialize service with required sheets if they don't exist
+ */
+initializeSheets() {
+  if (!this.data) {
+    this.data = {};
+  }
+  
+  // List of required sheets
+  const requiredSheets = [
+    'Users',
+    'Suppliers',
+    'PaymentCenters',
+    'PaymentCenterBudgets', // Make sure this is included
+    'PaymentTypes',
+    'ExpenseStatus',
+    'Expenses',
+    'JournalEntries',
+    'JournalLines',
+    'AuditLog'
+  ];
+  
+  // Initialize any missing sheets
+  requiredSheets.forEach(sheet => {
+    if (!this.data[sheet]) {
+      this.data[sheet] = [];
+    }
+  });
+}
+
+  /**
    * Load Excel data from an array buffer or file
    * @param {ArrayBuffer|File} excelData - The Excel data to load
    * @param {string} filename - Optional filename
@@ -17,6 +47,31 @@ class ExcelService {
   loadExcel(excelData, filename = null) {
     try {
       let workbook;
+
+      // Handle Blob objects (for mobile browsers)
+      if (excelData instanceof Blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          
+          reader.onload = (e) => {
+            try {
+              const data = new Uint8Array(e.target.result);
+              workbook = XLSX.read(data, { type: 'array', cellDates: true });
+              this.workbook = workbook;
+              this.filename = filename;
+              
+              const result = this.parseWorkbook(workbook);
+              this.data = result;
+              resolve(result);
+            } catch (error) {
+              reject(error);
+            }
+          };
+          
+          reader.onerror = (error) => reject(error);
+          reader.readAsArrayBuffer(excelData);
+        });
+      }
       
       if (excelData instanceof File) {
         // Read the file using file reader
@@ -93,35 +148,60 @@ class ExcelService {
   }
 
   /**
-   * Save current data to an Excel file
-   * @param {string} filename - The filename to save as
-   * @returns {ArrayBuffer} - Excel file as array buffer
-   */
-  saveToExcel(filename = null) {
-    if (!this.data) {
-      throw new Error('No data to save. Load or create data first.');
-    }
-    
-    const workbook = XLSX.utils.book_new();
-    
-    // Add each data collection as a sheet
-    Object.entries(this.data).forEach(([sheetName, collection]) => {
-      if (Array.isArray(collection) && collection.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(collection);
-        XLSX.utils.book_append_sheet(workbook, ws, sheetName);
-      }
-    });
-    
-    // Save to array buffer
-    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    
-    // Save to file if filename is provided
-    if (filename) {
-      this.saveToFile(buffer, filename);
-    }
-    
-    return buffer;
+ * Save current data to an Excel file
+ * @param {string} filename - The filename to save as
+ * @returns {ArrayBuffer} - Excel file as array buffer
+ */
+saveToExcel(filename = null) {
+  if (!this.data) {
+    throw new Error('No data to save. Load or create data first.');
   }
+  
+  // Initialize missing sheets
+  this.initializeSheets();
+  
+  const workbook = XLSX.utils.book_new();
+  
+  // Add each data collection as a sheet (specified explicitly for consistent order)
+  const sheetOrder = [
+    'Users',
+    'Suppliers',
+    'PaymentCenters',
+    'PaymentCenterBudgets', // Ensure this is included
+    'PaymentTypes',
+    'ExpenseStatus',
+    'Expenses',
+    'JournalEntries',
+    'JournalLines',
+    'AuditLog'
+  ];
+  
+  // Add sheets in specified order first
+  sheetOrder.forEach(sheetName => {
+    if (this.data[sheetName] && Array.isArray(this.data[sheetName])) {
+      const ws = XLSX.utils.json_to_sheet(this.data[sheetName]);
+      XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+    }
+  });
+  
+  // Add any remaining sheets not in the order list
+  Object.entries(this.data).forEach(([sheetName, collection]) => {
+    if (!sheetOrder.includes(sheetName) && Array.isArray(collection) && collection.length > 0) {
+      const ws = XLSX.utils.json_to_sheet(collection);
+      XLSX.utils.book_append_sheet(workbook, ws, sheetName);
+    }
+  });
+  
+  // Save to array buffer
+  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  
+  // Save to file if filename is provided
+  if (filename) {
+    this.saveToFile(buffer, filename);
+  }
+  
+  return buffer;
+}
 
   /**
    * Save array buffer to file

@@ -12,8 +12,8 @@ class DataInitializer {
     const data = {
       Users: this.createUsers(),
       Suppliers: this.createSuppliers(),
-      Programs: this.createPrograms(),
       PaymentCenters: this.createPaymentCenters(),
+      PaymentCenterBudgets: this.createPaymentCenterBudgets(),
       PaymentTypes: this.createPaymentTypes(),
       ExpenseStatus: this.createExpenseStatuses(),
       Expenses: this.createExpenses(),
@@ -136,20 +136,6 @@ class DataInitializer {
   }
   
   /**
-   * Create sample programs
-   * @returns {Array} Sample programs
-   */
-  createPrograms() {
-    return [
-      { id: '1', name: 'General Operations', description: 'Day-to-day operational expenses', budget: '250000' },
-      { id: '2', name: 'Outreach Program', description: 'Community outreach and education', budget: '75000' },
-      { id: '3', name: 'Research Initiative', description: 'Research and development projects', budget: '120000' },
-      { id: '4', name: 'Infrastructure', description: 'Infrastructure maintenance and upgrades', budget: '180000' },
-      { id: '5', name: 'Staff Development', description: 'Training and professional development', budget: '50000' }
-    ];
-  }
-  
-  /**
    * Create sample payment centers
    * @returns {Array} Sample payment centers
    */
@@ -159,6 +145,49 @@ class DataInitializer {
       { id: '2', name: 'VCES', description: 'VCES Payment Center' },
       { id: '3', name: 'Commercial', description: 'Commercial Payment Center' },
       { id: '4', name: 'Operation', description: 'Operation Payment Center' }
+    ];
+  }
+  
+  /**
+   * Create sample payment center budgets
+   * @returns {Array} Sample payment center budgets
+   */
+  createPaymentCenterBudgets() {
+    const currentYear = new Date().getFullYear().toString();
+    
+    return [
+      {
+        id: "budget-1-" + currentYear,
+        paymentCenterId: "1",
+        year: currentYear,
+        budget: "150000",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "budget-2-" + currentYear,
+        paymentCenterId: "2",
+        year: currentYear,
+        budget: "80000",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "budget-3-" + currentYear,
+        paymentCenterId: "3",
+        year: currentYear,
+        budget: "120000",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        id: "budget-4-" + currentYear,
+        paymentCenterId: "4",
+        year: currentYear,
+        budget: "50000",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
     ];
   }
   
@@ -187,7 +216,7 @@ class DataInitializer {
   }
   
   /**
-   * Create sample expenses
+   * Create sample expenses (without program field)
    * @returns {Array} Sample expenses
    */
   createExpenses() {
@@ -200,7 +229,6 @@ class DataInitializer {
         amount: '5699.99',
         paymentType: '1',
         paymentCenter: '1',
-        program: '1',
         status: 'Paid',
         notes: 'New laptops for staff',
         invoiceDate: '2023-01-25',
@@ -216,7 +244,6 @@ class DataInitializer {
         amount: '824.50',
         paymentType: '2',
         paymentCenter: '1',
-        program: '1',
         status: 'Paid',
         notes: 'Monthly office supplies',
         invoiceDate: '2023-02-05',
@@ -232,19 +259,33 @@ class DataInitializer {
         amount: '3450.00',
         paymentType: '1',
         paymentCenter: '2',
-        program: '2',
         status: 'Invoiced',
         notes: 'Materials for outreach program',
         invoiceDate: '2023-02-20',
         paymentDate: '',
         createdBy: 'user',
         createdAt: '2023-02-15T14:00:00.000Z'
+      },
+      {
+        id: 'EXP004',
+        date: '2023-03-01',
+        description: 'Commercial Project Expenses',
+        supplier: 'SUP001',
+        amount: '15000.00',
+        paymentType: '1',
+        paymentCenter: '3',
+        status: 'Paid',
+        notes: 'Large commercial project equipment',
+        invoiceDate: '2023-03-05',
+        paymentDate: '2023-03-15',
+        createdBy: 'admin',
+        createdAt: '2023-03-01T11:00:00.000Z'
       }
     ];
   }
 
   /**
-   * Create sample journal entries
+   * Create sample journal entries (simplified without program references)
    * @returns {Array} Sample journal entries
    */
   createJournalEntries() {
@@ -253,14 +294,12 @@ class DataInitializer {
         id: 'JE001',
         date: '2023-03-15',
         description: 'Budget Reallocation - Q1 Adjustment',
-        fromProgram: '1',
-        toProgram: '2',
         fromPaymentCenter: '1',
-        toPaymentCenter: '1',
+        toPaymentCenter: '2',
         amount: '5000',
         reference: 'JE-20230315-001',
         status: 'Approved',
-        notes: 'Quarterly budget reallocation to support outreach initiatives',
+        notes: 'Quarterly budget reallocation to support VCES initiatives',
         createdBy: 'admin',
         createdAt: '2023-03-15T10:30:00.000Z',
         approvedBy: 'admin',
@@ -273,14 +312,12 @@ class DataInitializer {
         id: 'JE002',
         date: '2023-04-05',
         description: 'Fund Transfer - Equipment Purchase',
-        fromProgram: '4',
-        toProgram: '3',
         fromPaymentCenter: '3',
-        toPaymentCenter: '2',
+        toPaymentCenter: '4',
         amount: '7500',
         reference: 'JE-20230405-001',
         status: 'Approved',
-        notes: 'Transfer of funds to research program for specialized equipment purchase',
+        notes: 'Transfer of funds to Operations for equipment purchase',
         createdBy: 'user',
         createdAt: '2023-04-05T14:45:00.000Z',
         approvedBy: 'admin',
