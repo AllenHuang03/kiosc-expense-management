@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/kiosc-expense-management/static/css/main.fcdb81bf.css",
+    "main.js": "/kiosc-expense-management/static/js/main.9907c25a.js",
+    "static/js/239.3d4cd57b.chunk.js": "/kiosc-expense-management/static/js/239.3d4cd57b.chunk.js",
+    "static/js/213.bead4b56.chunk.js": "/kiosc-expense-management/static/js/213.bead4b56.chunk.js",
+    "static/js/732.ea2c5ad7.chunk.js": "/kiosc-expense-management/static/js/732.ea2c5ad7.chunk.js",
+    "static/js/488.61c2dff8.chunk.js": "/kiosc-expense-management/static/js/488.61c2dff8.chunk.js",
+    "index.html": "/kiosc-expense-management/index.html",
+    "main.fcdb81bf.css.map": "/kiosc-expense-management/static/css/main.fcdb81bf.css.map",
+    "main.9907c25a.js.map": "/kiosc-expense-management/static/js/main.9907c25a.js.map",
+    "239.3d4cd57b.chunk.js.map": "/kiosc-expense-management/static/js/239.3d4cd57b.chunk.js.map",
+    "213.bead4b56.chunk.js.map": "/kiosc-expense-management/static/js/213.bead4b56.chunk.js.map",
+    "732.ea2c5ad7.chunk.js.map": "/kiosc-expense-management/static/js/732.ea2c5ad7.chunk.js.map",
+    "488.61c2dff8.chunk.js.map": "/kiosc-expense-management/static/js/488.61c2dff8.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.fcdb81bf.css",
+    "static/js/main.9907c25a.js"
+  ]
+}
